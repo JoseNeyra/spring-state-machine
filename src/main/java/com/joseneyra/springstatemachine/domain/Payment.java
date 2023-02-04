@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.boot.autoconfigure.web.WebProperties;
 
 import java.math.BigDecimal;
 
@@ -16,11 +17,11 @@ import java.math.BigDecimal;
 public class Payment {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
 
     @Enumerated(EnumType.STRING)        // Makes the enumeration value the name of the column in the db
     private PaymentState state;
 
-    private BigDecimal amout;
+    private BigDecimal amount;
 }

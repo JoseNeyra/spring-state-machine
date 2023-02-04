@@ -11,6 +11,7 @@ import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
@@ -28,28 +29,22 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentRepository.save(payment);
     }
 
+    @Transactional      // Adding the transactional context to prevent LazyInitializationException
     @Override
     public StateMachine<PaymentState, PaymentEvent> preAuth(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
 
         sendEvent(paymentId, sm, PaymentEvent.PRE_AUTHORIZE);
-        return null;
+        return sm;
     }
 
+    @Transactional      // Adding the transactional context to prevent LazyInitializationException
     @Override
     public StateMachine<PaymentState, PaymentEvent> authorizePayment(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
 
-        sendEvent(paymentId, sm, PaymentEvent.AUTH_APPROVED);
-        return null;
-    }
-
-    @Override
-    public StateMachine<PaymentState, PaymentEvent> declinePayment(Long paymentId) {
-        StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
-
-        sendEvent(paymentId, sm, PaymentEvent.AUTH_DECLINED);
-        return null;
+        sendEvent(paymentId, sm, PaymentEvent.AUTHORIZE);
+        return sm;
     }
 
     private void sendEvent(Long paymentId, StateMachine<PaymentState, PaymentEvent> sm, PaymentEvent event) {
@@ -61,7 +56,7 @@ public class PaymentServiceImpl implements PaymentService {
         sm.sendEvent(msg);
     }
 
-    // Persists the StateMachine to the database and retrieves it again
+    // Returns a new state machine for the payment
     private StateMachine<PaymentState, PaymentEvent> build(Long paymentId) {
         Payment payment = paymentRepository.getReferenceById(paymentId);
         StateMachine<PaymentState, PaymentEvent> sm = stateMachineFactory.getStateMachine(Long.toString(payment.getId()));
